@@ -232,7 +232,7 @@ async function loadTrainDetail(trainId, date) {
   }
 }
 
-// --- Auto-geolocate on first launch ---
+// --- Auto-geolocate on first launch (no station saved) ---
 async function autoGeolocate() {
   el.trainList.innerHTML = '<li class="state-msg">Hämtar din position...</li>';
   try {
@@ -257,6 +257,24 @@ async function autoGeolocate() {
       Kunde inte hämta position.
       <a href="#/settings">Välj station manuellt</a>
     </li>`;
+  }
+}
+
+// --- Background geo-update: byt station tyst om användaren har flyttat sig ---
+async function backgroundGeoUpdate() {
+  try {
+    const stations = await API.getStations(Settings.apiKey);
+    const pos = await Location.getCurrentPosition();
+    const { latitude: lat, longitude: lon } = pos.coords;
+    if (!Location.isInServiceArea(lat, lon)) return;
+    const nearest = Location.findNearest(stations, lat, lon);
+    if (!nearest || nearest.LocationSignature === Settings.stationSig) return;
+    Settings.setStation(nearest.LocationSignature, nearest.AdvertisedShortLocationName);
+    setTitle(nearest.AdvertisedShortLocationName);
+    toast(`Byter till ${nearest.AdvertisedShortLocationName}`);
+    loadAnnouncements();
+  } catch {
+    // Tyst fel — behåll nuvarande station
   }
 }
 
@@ -356,6 +374,7 @@ function route() {
     autoGeolocate();
   } else {
     loadAnnouncements();
+    backgroundGeoUpdate();
   }
   State.refreshTimer = setInterval(loadAnnouncements, 120_000);
 }
