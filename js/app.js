@@ -273,7 +273,7 @@ async function ensureStations() {
     const stations = await API.getStations(Settings.apiKey);
     State.allStations = stations;
     stationNameCache = Object.fromEntries(
-      stations.map(s => [s.LocationSignature, s.OfficialLocationName || s.AdvertisedShortLocationName])
+      stations.map(s => [s.LocationSignature, s.AdvertisedShortLocationName])
     );
   } catch { /* fall back to showing LocationSignature codes */ }
 }

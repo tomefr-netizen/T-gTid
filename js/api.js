@@ -1,5 +1,5 @@
 const API_URL = 'https://api.trafikinfo.trafikverket.se/v2/data.json';
-const STATION_CACHE_KEY = 'tagtid_stations_v3';
+const STATION_CACHE_KEY = 'tagtid_stations_v4';
 const STATION_CACHE_TTL = 86_400_000; // 24h
 
 const API = {
@@ -35,7 +35,6 @@ const API = {
       <QUERY objecttype="TrainStation" schemaversion="1" limit="1000">
         <FILTER/>
         <INCLUDE>LocationSignature</INCLUDE>
-        <INCLUDE>OfficialLocationName</INCLUDE>
         <INCLUDE>AdvertisedShortLocationName</INCLUDE>
         <INCLUDE>Geometry.WGS84</INCLUDE>
       </QUERY>`);
