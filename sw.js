@@ -1,4 +1,4 @@
-const CACHE = 'tagtid-v1';
+const CACHE = 'tagtid-v2';
 const SHELL = [
   './',
   './index.html',
