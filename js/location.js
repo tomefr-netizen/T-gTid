@@ -30,11 +30,22 @@ const Location = {
 
   getCurrentPosition() {
     return new Promise((resolve, reject) => {
+      if (!window.isSecureContext) {
+        reject(new Error('Platstjänster kräver HTTPS — öppna sidan via https://tagtid.mrgrumpy.se'));
+        return;
+      }
       if (!navigator.geolocation) {
         reject(new Error('Din webbläsare stöder inte platstjänster'));
         return;
       }
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
+      navigator.geolocation.getCurrentPosition(resolve, err => {
+        const msg = {
+          1: 'Åtkomst till plats nekad — tillåt platstjänster i webbläsarens/telefonens inställningar för den här sidan',
+          2: 'Kunde inte fastställa din position — försök igen',
+          3: 'Tidsgräns för platstjänst överskreds — försök igen',
+        }[err.code] || err.message;
+        reject(new Error(msg));
+      }, {
         timeout: 10000,
         maximumAge: 300000,
       });
