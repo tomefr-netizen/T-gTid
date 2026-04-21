@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0d0d0d"/>
+  <!-- Train body -->
+  <rect x="112" y="148" width="288" height="200" rx="28" fill="#1a1a1a" stroke="#00d4ff" stroke-width="10"/>
+  <!-- Windows -->
+  <rect x="148" y="184" width="88" height="64" rx="12" fill="#00d4ff" opacity="0.25"/>
+  <rect x="276" y="184" width="88" height="64" rx="12" fill="#00d4ff" opacity="0.25"/>
+  <!-- Door gap -->
+  <rect x="228" y="248" width="56" height="100" rx="6" fill="#0d0d0d"/>
+  <!-- Wheels -->
+  <circle cx="176" cy="376" r="36" fill="#252525" stroke="#444" stroke-width="8"/>
+  <circle cx="336" cy="376" r="36" fill="#252525" stroke="#444" stroke-width="8"/>
+  <!-- Rail -->
+  <rect x="80" y="406" width="352" height="14" rx="7" fill="#333"/>
+  <!-- Accent stripe -->
+  <rect x="112" y="306" width="288" height="8" rx="4" fill="#00d4ff" opacity="0.6"/>
+</svg>

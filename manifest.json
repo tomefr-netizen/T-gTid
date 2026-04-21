@@ -1,0 +1,18 @@
+{
+  "name": "TågTid",
+  "short_name": "TågTid",
+  "description": "Realtidsinformation om tåg vid svenska järnvägsstationer",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
+  "lang": "sv",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
