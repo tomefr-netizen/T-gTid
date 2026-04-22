@@ -9,4 +9,6 @@ const Settings = {
   },
   get theme()  { return localStorage.getItem('tagtid_theme') || 'dark'; },
   set theme(v) { localStorage.setItem('tagtid_theme', v); },
+  get showGhostStations()  { return localStorage.getItem('tagtid_ghost') === 'true'; },
+  set showGhostStations(v) { localStorage.setItem('tagtid_ghost', v); },
 };

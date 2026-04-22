@@ -35,7 +35,8 @@ function trainStatus(t) {
 function direction(t) {
   const locs = State.activeTab === 'departures' ? t.ToLocation : t.FromLocation;
   if (!Array.isArray(locs) || !locs.length) return '';
-  return [...locs].sort((a, b) => (a.Order || 0) - (b.Order || 0))[0]?.LocationName || '';
+  const sig = [...locs].sort((a, b) => (a.Order || 0) - (b.Order || 0))[0]?.LocationName || '';
+  return stationName(sig) || sig;
 }
 
 function isoDate(iso) {
@@ -50,6 +51,7 @@ const el = {
   btnBack:        $('btn-back'),
   btnSettings:    $('btn-settings'),
   tabs:           document.querySelectorAll('.tab'),
+  btnGhost:       $('btn-ghost-toggle'),
   trainList:      $('train-list'),
   lastUpdated:    $('last-updated'),
   detailHeader:   $('train-detail-header'),
@@ -63,6 +65,13 @@ const el = {
   btnSave:        $('btn-save-settings'),
   toast:          $('toast'),
 };
+
+// --- Ghost station toggle ---
+function updateGhostBtn() {
+  const show = Settings.showGhostStations;
+  el.btnGhost.textContent = show ? 'Dölj mötesplatser' : 'Visa mötesplatser';
+  el.btnGhost.classList.toggle('ghost-active', show);
+}
 
 // --- View switching ---
 function showView(id) {
@@ -141,7 +150,10 @@ async function loadAnnouncements() {
 
   const type = State.activeTab === 'departures' ? 'Avgang' : 'Ankomst';
   try {
-    const trains = await API.getAnnouncements(apiKey, stationSig, type);
+    const [trains] = await Promise.all([
+      API.getAnnouncements(apiKey, stationSig, type, Settings.showGhostStations),
+      ensureStations(),
+    ]);
     renderTrainList(trains);
     el.lastUpdated.textContent = `Uppdaterad ${new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
   } catch (err) {
@@ -396,6 +408,14 @@ function init() {
     State.activeTab = tab.dataset.tab;
     loadAnnouncements();
   }));
+
+  // Ghost station toggle
+  updateGhostBtn();
+  el.btnGhost.addEventListener('click', () => {
+    Settings.showGhostStations = !Settings.showGhostStations;
+    updateGhostBtn();
+    loadAnnouncements();
+  });
 
   // Theme toggle
   el.btnTheme.addEventListener('click', () => {
