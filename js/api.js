@@ -1,5 +1,5 @@
 const API_URL = 'https://api.trafikinfo.trafikverket.se/v2/data.json';
-const STATION_CACHE_KEY = 'tagtid_stations_v4';
+const STATION_CACHE_KEY = 'tagtid_stations_v5';
 const STATION_CACHE_TTL = 86_400_000; // 24h
 
 const API = {
@@ -36,6 +36,7 @@ const API = {
         <FILTER/>
         <INCLUDE>LocationSignature</INCLUDE>
         <INCLUDE>AdvertisedShortLocationName</INCLUDE>
+        <INCLUDE>Advertised</INCLUDE>
         <INCLUDE>Geometry.WGS84</INCLUDE>
       </QUERY>`);
     const result = await this._post(xml);
@@ -53,6 +54,7 @@ const API = {
           <AND>
             <EQ name="ActivityType" value="${activityType}" />
             <EQ name="LocationSignature" value="${locationSig}" />
+            <EQ name="Advertised" value="true" />
             <GT name="AdvertisedTimeAtLocation" value="${start.toISOString()}" />
             <LT name="AdvertisedTimeAtLocation" value="${end.toISOString()}" />
           </AND>
@@ -71,7 +73,7 @@ const API = {
     return result[0]?.TrainAnnouncement || [];
   },
 
-  async getTrainStops(apiKey, trainIdent, date, showGhost = false) {
+  async getTrainStops(apiKey, trainIdent, date) {
     // Filter on AdvertisedTimeAtLocation instead of ScheduledDepartureDateTime
     // to avoid 400 errors — extend to next-day 05:00 to cover overnight trains
     const start = new Date(date + 'T00:00:00');
@@ -86,7 +88,6 @@ const API = {
             <EQ name="AdvertisedTrainIdent" value="${trainIdent}" />
             <GT name="AdvertisedTimeAtLocation" value="${start.toISOString()}" />
             <LT name="AdvertisedTimeAtLocation" value="${end.toISOString()}" />
-            ${showGhost ? '' : '<EQ name="Advertised" value="true" />'}
           </AND>
         </FILTER>
         <INCLUDE>LocationSignature</INCLUDE>

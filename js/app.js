@@ -176,16 +176,21 @@ async function loadTrainDetail(trainId, date) {
   await ensureStations();
 
   try {
-    const raw = await API.getTrainStops(Settings.apiKey, trainId, date, Settings.showGhostStations);
+    const raw = await API.getTrainStops(Settings.apiKey, trainId, date);
     if (!raw.length) {
       el.trainStops.innerHTML = '<li class="state-msg">Inga hållplatser hittades.</li>';
       return;
     }
 
+    // Filter out unmanned meeting points unless user has toggled them on
+    const filtered = Settings.showGhostStations
+      ? raw
+      : raw.filter(s => isAdvertisedStation(s.LocationSignature));
+
     // Deduplicate: each intermediate station has both Ankomst + Avgang.
     // Keep Avgang for all stations except the last unique station (final destination = Ankomst only).
     const byStation = new Map();
-    for (const s of raw) {
+    for (const s of filtered) {
       const sig = s.LocationSignature;
       const existing = byStation.get(sig);
       // Prefer Avgang over Ankomst; if same type, keep first (earlier time)
@@ -294,9 +299,14 @@ async function backgroundGeoUpdate() {
 
 // --- Station name lookup ---
 let stationNameCache = {};
+let advertisedStations = new Set();
 
 function stationName(sig) {
   return stationNameCache[sig] || sig;
+}
+
+function isAdvertisedStation(sig) {
+  return advertisedStations.size === 0 || advertisedStations.has(sig);
 }
 
 async function ensureStations() {
@@ -306,6 +316,9 @@ async function ensureStations() {
     State.allStations = stations;
     stationNameCache = Object.fromEntries(
       stations.map(s => [s.LocationSignature, s.AdvertisedShortLocationName])
+    );
+    advertisedStations = new Set(
+      stations.filter(s => s.Advertised).map(s => s.LocationSignature)
     );
   } catch { /* fall back to showing LocationSignature codes */ }
 }
