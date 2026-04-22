@@ -182,10 +182,11 @@ async function loadTrainDetail(trainId, date) {
       return;
     }
 
-    // Filter out unmanned meeting points unless user has toggled them on
+    // Filter out unmanned meeting points unless user has toggled them on.
+    // Uses the Advertised field on each TrainAnnouncement — false = meeting point only.
     const filtered = Settings.showGhostStations
       ? raw
-      : raw.filter(s => isAdvertisedStation(s.LocationSignature));
+      : raw.filter(s => s.Advertised !== false);
 
     // Deduplicate: each intermediate station has both Ankomst + Avgang.
     // Keep Avgang for all stations except the last unique station (final destination = Ankomst only).
@@ -299,14 +300,9 @@ async function backgroundGeoUpdate() {
 
 // --- Station name lookup ---
 let stationNameCache = {};
-let advertisedStations = new Set();
 
 function stationName(sig) {
   return stationNameCache[sig] || sig;
-}
-
-function isAdvertisedStation(sig) {
-  return advertisedStations.size === 0 || advertisedStations.has(sig);
 }
 
 async function ensureStations() {
@@ -316,9 +312,6 @@ async function ensureStations() {
     State.allStations = stations;
     stationNameCache = Object.fromEntries(
       stations.map(s => [s.LocationSignature, s.AdvertisedShortLocationName])
-    );
-    advertisedStations = new Set(
-      stations.filter(s => s.Advertised).map(s => s.LocationSignature)
     );
   } catch { /* fall back to showing LocationSignature codes */ }
 }

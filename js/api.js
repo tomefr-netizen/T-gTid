@@ -36,7 +36,6 @@ const API = {
         <FILTER/>
         <INCLUDE>LocationSignature</INCLUDE>
         <INCLUDE>AdvertisedShortLocationName</INCLUDE>
-        <INCLUDE>Advertised</INCLUDE>
         <INCLUDE>Geometry.WGS84</INCLUDE>
       </QUERY>`);
     const result = await this._post(xml);
@@ -91,6 +90,7 @@ const API = {
           </AND>
         </FILTER>
         <INCLUDE>LocationSignature</INCLUDE>
+        <INCLUDE>Advertised</INCLUDE>
         <INCLUDE>AdvertisedTimeAtLocation</INCLUDE>
         <INCLUDE>EstimatedTimeAtLocation</INCLUDE>
         <INCLUDE>TimeAtLocation</INCLUDE>
