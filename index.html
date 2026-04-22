@@ -45,10 +45,6 @@
         <button class="tab active" data-tab="departures">Avgångar</button>
         <button class="tab"        data-tab="arrivals">Ankomster</button>
       </div>
-      <div class="ghost-bar">
-        <button id="btn-ghost-toggle" class="btn-ghost">Visa mötesplatser</button>
-        <span class="ghost-info" title="Tågmötesplatser är ej bemannade hållplatser där tåg möts för att kunna passera varandra på enkelspår.">?</span>
-      </div>
       <ul id="train-list"></ul>
       <div id="last-updated"></div>
     </section>
@@ -56,6 +52,10 @@
     <!-- Train detail view -->
     <section id="view-train" class="view">
       <div id="train-detail-header"></div>
+      <div class="ghost-bar">
+        <button id="btn-ghost-toggle" class="btn-ghost">Visa mötesplatser</button>
+        <span class="ghost-info" title="Tågmötesplatser är ej bemannade hållplatser där tåg möts för att kunna passera varandra på enkelspår.">?</span>
+      </div>
       <ul id="train-stops"></ul>
     </section>
 

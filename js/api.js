@@ -44,10 +44,9 @@ const API = {
     return stations;
   },
 
-  async getAnnouncements(apiKey, locationSig, activityType, showGhost = false) {
+  async getAnnouncements(apiKey, locationSig, activityType) {
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const end   = new Date(); end.setHours(23, 59, 59, 0);
-    const advertisedFilter = showGhost ? '' : '<EQ name="Advertised" value="true" />';
     const xml = this._wrap(apiKey, `
       <QUERY objecttype="TrainAnnouncement" schemaversion="1.5" limit="100" orderby="AdvertisedTimeAtLocation">
         <FILTER>
@@ -56,7 +55,6 @@ const API = {
             <EQ name="LocationSignature" value="${locationSig}" />
             <GT name="AdvertisedTimeAtLocation" value="${start.toISOString()}" />
             <LT name="AdvertisedTimeAtLocation" value="${end.toISOString()}" />
-            ${advertisedFilter}
           </AND>
         </FILTER>
         <INCLUDE>AdvertisedTrainIdent</INCLUDE>
@@ -73,7 +71,7 @@ const API = {
     return result[0]?.TrainAnnouncement || [];
   },
 
-  async getTrainStops(apiKey, trainIdent, date) {
+  async getTrainStops(apiKey, trainIdent, date, showGhost = false) {
     // Filter on AdvertisedTimeAtLocation instead of ScheduledDepartureDateTime
     // to avoid 400 errors — extend to next-day 05:00 to cover overnight trains
     const start = new Date(date + 'T00:00:00');
@@ -88,6 +86,7 @@ const API = {
             <EQ name="AdvertisedTrainIdent" value="${trainIdent}" />
             <GT name="AdvertisedTimeAtLocation" value="${start.toISOString()}" />
             <LT name="AdvertisedTimeAtLocation" value="${end.toISOString()}" />
+            ${showGhost ? '' : '<EQ name="Advertised" value="true" />'}
           </AND>
         </FILTER>
         <INCLUDE>LocationSignature</INCLUDE>

@@ -4,6 +4,7 @@ const State = {
   refreshTimer: null,
   allStations: [],
   loading: false,
+  currentTrain: null,
 };
 
 // --- Helpers ---
@@ -151,7 +152,7 @@ async function loadAnnouncements() {
   const type = State.activeTab === 'departures' ? 'Avgang' : 'Ankomst';
   try {
     const [trains] = await Promise.all([
-      API.getAnnouncements(apiKey, stationSig, type, Settings.showGhostStations),
+      API.getAnnouncements(apiKey, stationSig, type),
       ensureStations(),
     ]);
     renderTrainList(trains);
@@ -168,13 +169,14 @@ async function loadAnnouncements() {
 
 // --- Load train detail ---
 async function loadTrainDetail(trainId, date) {
+  State.currentTrain = { id: trainId, date };
   el.trainStops.innerHTML = '<li class="state-msg">Laddar...</li>';
   el.detailHeader.innerHTML = `<div class="detail-train-id">Tåg ${trainId}</div>`;
 
   await ensureStations();
 
   try {
-    const raw = await API.getTrainStops(Settings.apiKey, trainId, date);
+    const raw = await API.getTrainStops(Settings.apiKey, trainId, date, Settings.showGhostStations);
     if (!raw.length) {
       el.trainStops.innerHTML = '<li class="state-msg">Inga hållplatser hittades.</li>';
       return;
@@ -414,7 +416,9 @@ function init() {
   el.btnGhost.addEventListener('click', () => {
     Settings.showGhostStations = !Settings.showGhostStations;
     updateGhostBtn();
-    loadAnnouncements();
+    if (State.currentTrain) {
+      loadTrainDetail(State.currentTrain.id, State.currentTrain.date);
+    }
   });
 
   // Theme toggle
