@@ -45,6 +45,10 @@
         <button class="tab active" data-tab="departures">Avgångar</button>
         <button class="tab"        data-tab="arrivals">Ankomster</button>
       </div>
+      <div id="station-action-bar" hidden>
+        <button id="btn-fetch-name" class="btn-action">Hämta namn</button>
+        <button id="btn-goto-saved-station" class="btn-action btn-action-accent" hidden>Tåg</button>
+      </div>
       <ul id="train-list"></ul>
       <div id="last-updated"></div>
     </section>
@@ -52,9 +56,13 @@
     <!-- Train detail view -->
     <section id="view-train" class="view">
       <div id="train-detail-header"></div>
+      <div class="detail-actions">
+        <button id="btn-save-train" class="btn-action">Spara tåg</button>
+        <button id="btn-goto-saved" class="btn-action btn-action-accent" hidden>Aktuellt tåg</button>
+      </div>
       <div class="ghost-bar">
-        <button id="btn-ghost-toggle" class="btn-ghost">Visa mötesplatser</button>
-        <span class="ghost-info" title="Tågmötesplatser är ej bemannade hållplatser där tåg möts för att kunna passera varandra på enkelspår.">?</span>
+        <button id="btn-ghost-toggle" class="btn-ghost">Visa spökstationer</button>
+        <span class="ghost-info" title="Spökstationer är ej bemannade hållplatser där tåg möts för att kunna passera varandra på enkelspår.">?</span>
       </div>
       <ul id="train-stops"></ul>
     </section>
@@ -95,6 +103,12 @@
             <span>Tema</span>
             <button id="btn-theme" class="btn btn-secondary">Ljust tema</button>
           </div>
+        </div>
+
+        <div class="settings-group">
+          <span class="settings-label">App</span>
+          <span id="version-display" class="settings-hint"></span>
+          <button id="btn-update-app" class="btn btn-secondary">Uppdatera appen</button>
         </div>
 
         <button id="btn-save-settings" class="btn btn-primary">Spara inställningar</button>

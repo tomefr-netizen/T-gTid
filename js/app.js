@@ -1,3 +1,5 @@
+const VERSION = '0.1';
+
 // --- State ---
 const State = {
   activeTab: 'departures',
@@ -5,6 +7,7 @@ const State = {
   allStations: [],
   loading: false,
   currentTrain: null,
+  viewStationSig: null,
 };
 
 // --- Helpers ---
@@ -18,16 +21,8 @@ function delayMin(advertised, estimated) {
   return Math.round((new Date(estimated) - new Date(advertised)) / 60000);
 }
 
-function isCancelled(deviations) {
-  if (!Array.isArray(deviations) || !deviations.length) return false;
-  return deviations.some(d =>
-    (d.Description || '').toLowerCase().includes('inställ') ||
-    (d.Code || '').startsWith('ANA')
-  );
-}
-
 function trainStatus(t) {
-  if (isCancelled(t.Deviation)) return 'cancelled';
+  if (t.Canceled === true) return 'cancelled';
   if (delayMin(t.AdvertisedTimeAtLocation, t.EstimatedTimeAtLocation) >= 5) return 'delayed';
   if (t.TimeAtLocation) return 'passed';
   return 'ontime';
@@ -47,31 +42,67 @@ function isoDate(iso) {
 // --- DOM refs ---
 const $ = id => document.getElementById(id);
 const el = {
-  views:          document.querySelectorAll('.view'),
-  headerTitle:    $('header-title'),
-  btnBack:        $('btn-back'),
-  btnSettings:    $('btn-settings'),
-  tabs:           document.querySelectorAll('.tab'),
-  btnGhost:       $('btn-ghost-toggle'),
-  trainList:      $('train-list'),
-  lastUpdated:    $('last-updated'),
-  detailHeader:   $('train-detail-header'),
-  trainStops:     $('train-stops'),
-  inputApiKey:    $('input-apikey'),
-  inputStation:   $('input-station-search'),
-  suggestions:    $('station-suggestions'),
-  selectedStation:$('selected-station'),
-  btnGeolocate:   $('btn-geolocate'),
-  btnTheme:       $('btn-theme'),
-  btnSave:        $('btn-save-settings'),
-  toast:          $('toast'),
+  views:               document.querySelectorAll('.view'),
+  headerTitle:         $('header-title'),
+  btnBack:             $('btn-back'),
+  btnSettings:         $('btn-settings'),
+  tabs:                document.querySelectorAll('.tab'),
+  btnGhost:            $('btn-ghost-toggle'),
+  trainList:           $('train-list'),
+  lastUpdated:         $('last-updated'),
+  detailHeader:        $('train-detail-header'),
+  trainStops:          $('train-stops'),
+  btnSaveTrain:        $('btn-save-train'),
+  btnGotoSaved:        $('btn-goto-saved'),
+  stationActionBar:    $('station-action-bar'),
+  btnFetchName:        $('btn-fetch-name'),
+  btnGotoSavedStation: $('btn-goto-saved-station'),
+  inputApiKey:         $('input-apikey'),
+  inputStation:        $('input-station-search'),
+  suggestions:         $('station-suggestions'),
+  selectedStation:     $('selected-station'),
+  btnGeolocate:        $('btn-geolocate'),
+  btnTheme:            $('btn-theme'),
+  btnSave:             $('btn-save-settings'),
+  versionDisplay:      $('version-display'),
+  btnUpdateApp:        $('btn-update-app'),
+  toast:               $('toast'),
 };
 
 // --- Ghost station toggle ---
 function updateGhostBtn() {
   const show = Settings.showGhostStations;
-  el.btnGhost.textContent = show ? 'Dölj mötesplatser' : 'Visa mötesplatser';
+  el.btnGhost.textContent = show ? 'Dölj spökstationer' : 'Visa spökstationer';
   el.btnGhost.classList.toggle('ghost-active', show);
+}
+
+// --- Saved train buttons in detail view ---
+function updateDetailActions() {
+  const saved = Settings.savedTrain;
+  const cur   = State.currentTrain;
+  const isCurrent = saved && cur && saved.id === cur.id && saved.date === cur.date;
+  el.btnSaveTrain.textContent = isCurrent ? 'Sparat ✓' : 'Spara tåg';
+  el.btnSaveTrain.disabled = isCurrent;
+  if (saved && !isCurrent) {
+    el.btnGotoSaved.textContent = `Aktuellt tåg: ${saved.id}`;
+    el.btnGotoSaved.hidden = false;
+  } else {
+    el.btnGotoSaved.hidden = true;
+  }
+}
+
+// --- Station action bar in temp station view ---
+function updateStationActionBar() {
+  el.btnFetchName.dataset.sig = State.viewStationSig || '';
+  el.btnFetchName.textContent = 'Hämta namn';
+  el.btnFetchName.disabled = false;
+  const saved = Settings.savedTrain;
+  if (saved) {
+    el.btnGotoSavedStation.textContent = `Tåg ${saved.id}`;
+    el.btnGotoSavedStation.hidden = false;
+  } else {
+    el.btnGotoSavedStation.hidden = true;
+  }
 }
 
 // --- View switching ---
@@ -100,6 +131,30 @@ function applyTheme(theme) {
   el.btnTheme.textContent = theme === 'dark' ? 'Ljust tema' : 'Mörkt tema';
 }
 
+// --- Station name lookup ---
+let stationNameCache = {};
+let longNamesCache = {};
+
+function stationName(sig) {
+  return longNamesCache[sig] || stationNameCache[sig] || sig;
+}
+
+function loadLongNamesCache() {
+  const stored = localStorage.getItem('tagtid_longnames');
+  if (stored) longNamesCache = JSON.parse(stored);
+}
+
+async function ensureStations() {
+  if (Object.keys(stationNameCache).length) return;
+  try {
+    const stations = await API.getStations(Settings.apiKey);
+    State.allStations = stations;
+    stationNameCache = Object.fromEntries(
+      stations.map(s => [s.LocationSignature, s.AdvertisedShortLocationName])
+    );
+  } catch { /* fall back to showing LocationSignature codes */ }
+}
+
 // --- Render train list ---
 function renderTrainList(trains) {
   if (!trains.length) {
@@ -122,12 +177,24 @@ function renderTrainList(trains) {
     else if (status === 'delayed')   badge = `<span class="badge delayed">Beräknas ${est} (+${delay} min)</span>`;
     else                             badge = '<span class="badge ontime">I tid</span>';
 
+    const metaParts = [];
+    if (t.TrackAtLocation) metaParts.push(`Spår ${t.TrackAtLocation}`);
+    const operator = t.ProductInformation?.[0]?.Description;
+    if (operator) metaParts.push(operator);
+    if (t.TypeOfTraffic) metaParts.push(t.TypeOfTraffic);
+    const dev = t.Deviation?.[0]?.Description;
+    if (dev && status !== 'cancelled') metaParts.push(dev);
+    const metaHtml = metaParts.length
+      ? `<span class="train-meta">${metaParts.join(' · ')}</span>`
+      : '';
+
     return `<li class="train-item" data-status="${status}"
                 data-id="${t.AdvertisedTrainIdent}" data-date="${date}">
       <div class="train-time">${adv}</div>
       <div class="train-info">
         <span class="train-id">Tåg ${t.AdvertisedTrainIdent}</span>
         <span class="train-dir">${dir ? '→ ' + dir : ''}</span>
+        ${metaHtml}
       </div>
       <div class="train-status">${badge}</div>
     </li>`;
@@ -140,10 +207,11 @@ function renderTrainList(trains) {
   });
 }
 
-// --- Load station view ---
+// --- Load station announcements ---
 async function loadAnnouncements() {
   if (State.loading) return;
-  const { apiKey, stationSig } = Settings;
+  const apiKey = Settings.apiKey;
+  const stationSig = State.viewStationSig || Settings.stationSig;
   if (!apiKey || !stationSig) return;
 
   State.loading = true;
@@ -170,6 +238,7 @@ async function loadAnnouncements() {
 // --- Load train detail ---
 async function loadTrainDetail(trainId, date) {
   State.currentTrain = { id: trainId, date };
+  updateDetailActions();
   el.trainStops.innerHTML = '<li class="state-msg">Laddar...</li>';
   el.detailHeader.innerHTML = `<div class="detail-train-id">Tåg ${trainId}</div>`;
 
@@ -194,7 +263,6 @@ async function loadTrainDetail(trainId, date) {
     for (const s of filtered) {
       const sig = s.LocationSignature;
       const existing = byStation.get(sig);
-      // Prefer Avgang over Ankomst; if same type, keep first (earlier time)
       if (!existing || (existing.ActivityType !== 'Avgang' && s.ActivityType === 'Avgang')) {
         byStation.set(sig, s);
       }
@@ -214,7 +282,7 @@ async function loadTrainDetail(trainId, date) {
       const est       = stop.EstimatedTimeAtLocation;
       const actual    = stop.TimeAtLocation;
       const passed    = !!actual || (adv && new Date(adv) < now);
-      const cancelled = isCancelled(stop.Deviation);
+      const cancelled = stop.Canceled === true;
       const delay     = actual ? delayMin(adv, actual) : delayMin(adv, est);
 
       const statusClass = cancelled ? 'cancelled'
@@ -223,7 +291,6 @@ async function loadTrainDetail(trainId, date) {
 
       let timesHtml;
       if (actual) {
-        // Show planned (strikethrough) + actual if late
         if (delay >= 5) {
           timesHtml = `<span class="stop-planned">${fmtTime(adv)}</span>`
                     + `<span class="stop-arrow">→</span>`
@@ -241,7 +308,7 @@ async function loadTrainDetail(trainId, date) {
         timesHtml = `<span class="stop-time">${fmtTime(adv)}</span>`;
       }
 
-      return `<li class="stop-item ${statusClass}">
+      return `<li class="stop-item ${statusClass}" data-sig="${stop.LocationSignature}">
         <div class="stop-dot"></div>
         <div class="stop-name">${stationName(stop.LocationSignature)}</div>
         <div class="stop-times">${timesHtml}</div>
@@ -298,24 +365,6 @@ async function backgroundGeoUpdate() {
   }
 }
 
-// --- Station name lookup ---
-let stationNameCache = {};
-
-function stationName(sig) {
-  return stationNameCache[sig] || sig;
-}
-
-async function ensureStations() {
-  if (Object.keys(stationNameCache).length) return;
-  try {
-    const stations = await API.getStations(Settings.apiKey);
-    State.allStations = stations;
-    stationNameCache = Object.fromEntries(
-      stations.map(s => [s.LocationSignature, s.AdvertisedShortLocationName])
-    );
-  } catch { /* fall back to showing LocationSignature codes */ }
-}
-
 // --- Settings: station search ---
 async function initStationSearch() {
   if (State.allStations.length || !Settings.apiKey) return;
@@ -362,6 +411,7 @@ function route() {
     const parts   = hash.slice(8).split('/');
     const trainId = decodeURIComponent(parts[0]);
     const date    = parts[1] || new Date().toISOString().slice(0, 10);
+    State.viewStationSig = null;
     showView('view-train');
     setTitle('Tåginformation');
     loadTrainDetail(trainId, date);
@@ -369,6 +419,7 @@ function route() {
   }
 
   if (hash === '#/settings') {
+    State.viewStationSig = null;
     showView('view-settings');
     setTitle('Inställningar');
     el.inputApiKey.value = Settings.apiKey;
@@ -382,11 +433,24 @@ function route() {
     return;
   }
 
-  // Station view
+  if (hash.startsWith('#/station/')) {
+    const sig  = decodeURIComponent(hash.slice(10));
+    State.viewStationSig = sig;
+    showView('view-station');
+    setTitle(stationName(sig));
+    el.stationActionBar.hidden = false;
+    updateStationActionBar();
+    loadAnnouncements();
+    return;
+  }
+
+  // Home station view
   if (!Settings.apiKey) {
     window.location.hash = '#/settings';
     return;
   }
+  State.viewStationSig = null;
+  el.stationActionBar.hidden = true;
   showView('view-station');
   setTitle(Settings.stationName || 'TågTid');
 
@@ -401,7 +465,9 @@ function route() {
 
 // --- Init ---
 function init() {
+  loadLongNamesCache();
   applyTheme(Settings.theme);
+  el.versionDisplay.textContent = `Version ${VERSION}`;
 
   // Back button
   el.btnBack.addEventListener('click', () => history.back());
@@ -424,6 +490,64 @@ function init() {
     updateGhostBtn();
     if (State.currentTrain) {
       loadTrainDetail(State.currentTrain.id, State.currentTrain.date);
+    }
+  });
+
+  // Stop click → temp station view
+  el.trainStops.addEventListener('click', e => {
+    const item = e.target.closest('.stop-item[data-sig]');
+    if (item?.dataset.sig) {
+      window.location.hash = `#/station/${encodeURIComponent(item.dataset.sig)}`;
+    }
+  });
+
+  // Save train
+  el.btnSaveTrain.addEventListener('click', () => {
+    if (State.currentTrain) {
+      Settings.savedTrain = State.currentTrain;
+      updateDetailActions();
+    }
+  });
+
+  // Goto saved train (from train detail view)
+  el.btnGotoSaved.addEventListener('click', () => {
+    const saved = Settings.savedTrain;
+    if (saved) {
+      window.location.hash = `#/train/${encodeURIComponent(saved.id)}/${saved.date}`;
+    }
+  });
+
+  // Fetch full station name
+  el.btnFetchName.addEventListener('click', async () => {
+    const sig = el.btnFetchName.dataset.sig;
+    if (!sig) return;
+    el.btnFetchName.disabled = true;
+    el.btnFetchName.textContent = 'Hämtar...';
+    try {
+      const station = await API.getStationFull(Settings.apiKey, sig);
+      if (station?.AdvertisedLocationName) {
+        const name = station.AdvertisedLocationName;
+        Settings.setLongName(sig, name);
+        longNamesCache[sig] = name;
+        setTitle(name);
+        el.btnFetchName.textContent = name;
+      } else {
+        toast('Inget längre namn hittades');
+        el.btnFetchName.disabled = false;
+        el.btnFetchName.textContent = 'Hämta namn';
+      }
+    } catch (err) {
+      toast(`Fel: ${err.message}`);
+      el.btnFetchName.disabled = false;
+      el.btnFetchName.textContent = 'Hämta namn';
+    }
+  });
+
+  // Goto saved train (from station view)
+  el.btnGotoSavedStation.addEventListener('click', () => {
+    const saved = Settings.savedTrain;
+    if (saved) {
+      window.location.hash = `#/train/${encodeURIComponent(saved.id)}/${saved.date}`;
     }
   });
 
@@ -483,6 +607,25 @@ function init() {
     toast('Inställningar sparade');
     if (Settings.apiKey && Settings.stationSig) {
       setTimeout(() => { window.location.hash = '#/'; }, 600);
+    }
+  });
+
+  // Update app — clears SW cache and reloads
+  el.btnUpdateApp.addEventListener('click', async () => {
+    el.btnUpdateApp.disabled = true;
+    el.btnUpdateApp.textContent = 'Uppdaterar...';
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.update();
+      }
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+      window.location.reload(true);
+    } catch {
+      el.btnUpdateApp.disabled = false;
+      el.btnUpdateApp.textContent = 'Uppdatera appen';
+      toast('Kunde inte uppdatera — ladda om manuellt');
     }
   });
 

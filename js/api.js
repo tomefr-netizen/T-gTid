@@ -34,14 +34,24 @@ const API = {
     const xml = this._wrap(apiKey, `
       <QUERY objecttype="TrainStation" schemaversion="1" limit="1000">
         <FILTER/>
-        <INCLUDE>LocationSignature</INCLUDE>
-        <INCLUDE>AdvertisedShortLocationName</INCLUDE>
-        <INCLUDE>Geometry.WGS84</INCLUDE>
+        <INCLUDE>LocationSignature,AdvertisedShortLocationName,Geometry.WGS84</INCLUDE>
       </QUERY>`);
     const result = await this._post(xml);
     const stations = result[0]?.TrainStation || [];
     localStorage.setItem(STATION_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: stations }));
     return stations;
+  },
+
+  async getStationFull(apiKey, sig) {
+    const xml = this._wrap(apiKey, `
+      <QUERY objecttype="TrainStation" schemaversion="1" limit="1">
+        <FILTER>
+          <EQ name="LocationSignature" value="${sig}" />
+        </FILTER>
+        <INCLUDE>LocationSignature,AdvertisedLocationName</INCLUDE>
+      </QUERY>`);
+    const result = await this._post(xml);
+    return result[0]?.TrainStation?.[0] || null;
   },
 
   async getAnnouncements(apiKey, locationSig, activityType) {
@@ -58,15 +68,7 @@ const API = {
             <LT name="AdvertisedTimeAtLocation" value="${end.toISOString()}" />
           </AND>
         </FILTER>
-        <INCLUDE>AdvertisedTrainIdent</INCLUDE>
-        <INCLUDE>AdvertisedTimeAtLocation</INCLUDE>
-        <INCLUDE>EstimatedTimeAtLocation</INCLUDE>
-        <INCLUDE>TimeAtLocation</INCLUDE>
-        <INCLUDE>Deviation</INCLUDE>
-        <INCLUDE>ToLocation</INCLUDE>
-        <INCLUDE>FromLocation</INCLUDE>
-        <INCLUDE>ScheduledDepartureDateTime</INCLUDE>
-        <INCLUDE>ActivityType</INCLUDE>
+        <INCLUDE>AdvertisedTrainIdent,AdvertisedTimeAtLocation,EstimatedTimeAtLocation,TimeAtLocation,Deviation,ToLocation,FromLocation,ScheduledDepartureDateTime,ActivityType,ProductInformation,TrackAtLocation,TypeOfTraffic,Canceled</INCLUDE>
       </QUERY>`);
     const result = await this._post(xml);
     return result[0]?.TrainAnnouncement || [];
@@ -89,13 +91,7 @@ const API = {
             <LT name="AdvertisedTimeAtLocation" value="${end.toISOString()}" />
           </AND>
         </FILTER>
-        <INCLUDE>LocationSignature</INCLUDE>
-        <INCLUDE>Advertised</INCLUDE>
-        <INCLUDE>AdvertisedTimeAtLocation</INCLUDE>
-        <INCLUDE>EstimatedTimeAtLocation</INCLUDE>
-        <INCLUDE>TimeAtLocation</INCLUDE>
-        <INCLUDE>ActivityType</INCLUDE>
-        <INCLUDE>Deviation</INCLUDE>
+        <INCLUDE>LocationSignature,Advertised,AdvertisedTimeAtLocation,EstimatedTimeAtLocation,TimeAtLocation,ActivityType,Deviation,Canceled</INCLUDE>
       </QUERY>`);
     const result = await this._post(xml);
     return result[0]?.TrainAnnouncement || [];
