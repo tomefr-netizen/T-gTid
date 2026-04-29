@@ -58,7 +58,7 @@ const API = {
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const end   = new Date(); end.setHours(23, 59, 59, 0);
     const xml = this._wrap(apiKey, `
-      <QUERY objecttype="TrainAnnouncement" schemaversion="1.5" limit="100" orderby="AdvertisedTimeAtLocation">
+      <QUERY objecttype="TrainAnnouncement" namespace="rail.trafficinfo" schemaversion="2.0" limit="100" orderby="AdvertisedTimeAtLocation">
         <FILTER>
           <AND>
             <EQ name="ActivityType" value="${activityType}" />
@@ -83,7 +83,7 @@ const API = {
     end.setHours(5, 0, 0, 0);
 
     const xml = this._wrap(apiKey, `
-      <QUERY objecttype="TrainAnnouncement" schemaversion="1.5" limit="200" orderby="AdvertisedTimeAtLocation">
+      <QUERY objecttype="TrainAnnouncement" namespace="rail.trafficinfo" schemaversion="2.0" limit="200" orderby="AdvertisedTimeAtLocation">
         <FILTER>
           <AND>
             <EQ name="AdvertisedTrainIdent" value="${trainIdent}" />
