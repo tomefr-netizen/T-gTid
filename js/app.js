@@ -181,7 +181,8 @@ function renderTrainList(trains) {
     if (t.TrackAtLocation) metaParts.push(`Spår ${t.TrackAtLocation}`);
     const operator = t.ProductInformation?.[0]?.Description;
     if (operator) metaParts.push(operator);
-    if (t.TypeOfTraffic) metaParts.push(t.TypeOfTraffic);
+    const trafficType = normalizeTrafficType(t.TypeOfTraffic);
+    if (trafficType) metaParts.push(trafficType);
     const dev = t.Deviation?.[0]?.Description;
     if (dev && status !== 'cancelled') metaParts.push(dev);
     const metaHtml = metaParts.length
