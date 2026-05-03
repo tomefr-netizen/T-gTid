@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="sv" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TågTid Manual">
+  <meta name="description" content="Manual för TågTid">
+  <title>TågTid Manual</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-512.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="manual-page">
+  <div class="manual-shell">
+    <header class="manual-hero">
+      <div class="manual-hero-top">
+        <span class="manual-kicker">TågTid</span>
+        <a class="btn btn-secondary manual-back" href="index.html#/">Tillbaka till appen</a>
+      </div>
+
+      <div class="manual-hero-copy">
+        <h1>Manual</h1>
+        <p>
+          TågTid visar avgångar och ankomster vid svenska järnvägsstationer i realtid.
+          Här får du en enkel guide till hur du kommer igång, hur appen använder plats,
+          och hur du hittar rätt tåg snabbare.
+        </p>
+      </div>
+
+      <nav class="manual-jump-links" aria-label="Snabblänkar">
+        <a href="#kom-igang">Kom igång</a>
+        <a href="#api-nyckel">API-nyckel</a>
+        <a href="#plats">Plats</a>
+        <a href="#avgangar">Avgångar</a>
+        <a href="#problem">Vanliga problem</a>
+      </nav>
+    </header>
+
+    <main class="manual-content">
+      <section class="manual-grid">
+        <article class="manual-card manual-card-accent">
+          <h2>Det viktigaste först</h2>
+          <p>
+            För att TågTid ska fungera smidigt behöver du två saker:
+            en sparad API-nyckel från Trafikverket och tillgång till plats på din telefon.
+          </p>
+        </article>
+
+        <article class="manual-card">
+          <h2>Första gången du öppnar appen</h2>
+          <p>
+            Om du inte redan har sparat en API-nyckel öppnar TågTid direkt sidan
+            <strong>Inställningar</strong>. Det är helt normalt och är första steget för att komma igång.
+          </p>
+        </article>
+      </section>
+
+      <section id="kom-igang" class="manual-section">
+        <h2>Kom igång</h2>
+        <ol class="manual-steps">
+          <li>Öppna TågTid.</li>
+          <li>Om ingen API-nyckel är sparad kommer du direkt till Inställningar.</li>
+          <li>Klistra in din Trafikverket API-nyckel.</li>
+          <li>Tillåt platsåtkomst när telefonen eller webbläsaren frågar.</li>
+          <li>Tryck på <strong>Hitta närmaste station automatiskt</strong> eller välj station manuellt.</li>
+          <li>Tryck på <strong>Spara inställningar</strong>.</li>
+        </ol>
+      </section>
+
+      <section id="api-nyckel" class="manual-section">
+        <h2>API-nyckel från Trafikverket</h2>
+        <p>
+          TågTid använder Trafikverkets öppna API för trafikinformation för att hämta realtidsdata om tåg.
+          Därför behöver du en egen API-nyckel.
+        </p>
+        <div class="manual-note">
+          <p>
+            Du skaffar nyckeln gratis via
+            <a href="https://www.trafikverket.se/e-tjanster/trafikverkets-oppna-api-for-trafikinformation/" target="_blank" rel="noopener">Trafikverkets öppna API för trafikinformation</a>.
+          </p>
+        </div>
+        <p>
+          När du har fått din nyckel lägger du in den i Inställningar och sparar.
+          Nyckeln lagras lokalt i din webbläsare på den enhet du använder.
+        </p>
+      </section>
+
+      <section id="plats" class="manual-section">
+        <h2>Plats och stationer</h2>
+        <p>
+          TågTid hämtar närmaste station med hjälp av GPS eller annan platsinformation i din enhet.
+          Därför är det viktigt att du tillåter platsåtkomst.
+        </p>
+        <div class="manual-note manual-note-warn">
+          <p>
+            Om du nekar platsåtkomst kan appen inte hitta närmaste station automatiskt.
+            Då får du välja station manuellt i Inställningar.
+          </p>
+        </div>
+        <p>
+          När appen öppnas försöker TågTid hämta närmaste station automatiskt,
+          så att du snabbare ser rätt avgångar och ankomster.
+        </p>
+      </section>
+
+      <section id="avgangar" class="manual-section">
+        <h2>Avgångar och ankomster</h2>
+        <p>
+          På startsidan kan du växla mellan <strong>Avgångar</strong> och <strong>Ankomster</strong>.
+          Listan visar dagens tåg för den station som är vald just nu.
+        </p>
+        <ul class="manual-list">
+          <li>Tid visas längst till vänster.</li>
+          <li>Destination eller ursprung visas i mitten.</li>
+          <li>Färgmarkering och status visar om tåget är i tid, försenat, passerat eller inställt.</li>
+          <li>Du kan också se spår, operatör och om det är tåg eller buss när informationen finns.</li>
+        </ul>
+      </section>
+
+      <section id="tag-info" class="manual-section">
+        <h2>Tåginformation och sparade tåg</h2>
+        <p>
+          Tryck på ett tåg i listan för att öppna tågets detaljvy. Där ser du hela rutten med hållplatser,
+          planerade tider och eventuella förseningar.
+        </p>
+        <ul class="manual-list">
+          <li>Tryck på <strong>Spara tåg</strong> om du vill hitta tillbaka till ett visst tåg senare.</li>
+          <li>Om du redan har sparat ett tåg visas en knapp för att hoppa direkt till det.</li>
+          <li>Du kan också välja att visa spökstationer om du vill se fler tekniska stopp längs vägen.</li>
+        </ul>
+      </section>
+
+      <section id="spokstationer" class="manual-section">
+        <h2>Spökstationer</h2>
+        <p>
+          Spökstationer är ett internt namn i TågTid för tekniska platser, mötesplatser och nedlagda stationer.
+          Det är alltså platser där resenärer normalt inte ska gå på eller av.
+        </p>
+        <p>
+          Ofta syns de först efter att tåget passerat dem, men ibland visas de direkt i listan.
+          Det gäller särskilt när visning av spökstationer är aktiv.
+        </p>
+      </section>
+
+      <section id="stationsnamn" class="manual-section">
+        <h2>Korta och långa stationsnamn</h2>
+        <p>
+          Ibland visas bara stationens korta namn, till exempel <strong>Rgn</strong> för <strong>Riksgränsen</strong>.
+          Om du öppnar stationen och trycker på <strong>Hämta namn</strong> hämtar appen det långa namnet
+          och sparar det lokalt på enheten.
+        </p>
+        <p>
+          Efter det försöker TågTid i första hand visa det långa namnet i stället för förkortningen.
+        </p>
+      </section>
+
+      <section id="tema" class="manual-section">
+        <h2>Tema och uppdatering</h2>
+        <p>
+          I Inställningar kan du byta mellan ljust och mörkt tema. Där finns också knappen
+          <strong>Uppdatera appen</strong> om du vill läsa in den senaste versionen.
+        </p>
+      </section>
+
+      <section id="problem" class="manual-section">
+        <h2>Vanliga problem</h2>
+        <div class="manual-faq">
+          <article class="manual-card">
+            <h3>Appen hittar ingen station</h3>
+            <p>
+              Kontrollera att platsåtkomst är tillåten för sidan eller appen.
+              Om det fortfarande inte fungerar kan du välja station manuellt i Inställningar.
+            </p>
+          </article>
+
+          <article class="manual-card">
+            <h3>Jag kommer bara till Inställningar</h3>
+            <p>
+              Det betyder oftast att ingen API-nyckel är sparad ännu. Lägg in din nyckel och spara.
+            </p>
+          </article>
+
+          <article class="manual-card">
+            <h3>Jag ser inga tåg</h3>
+            <p>
+              Kontrollera att rätt station är vald och att din API-nyckel fungerar. Prova också att uppdatera appen.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
