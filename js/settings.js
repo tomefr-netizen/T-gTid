@@ -9,6 +9,13 @@ const Settings = {
   },
   get theme()  { return localStorage.getItem('tagtid_theme') || 'dark'; },
   set theme(v) { localStorage.setItem('tagtid_theme', v); },
+  get autoUpdateStation() {
+    const stored = localStorage.getItem('tagtid_auto_update_station');
+    return stored === null ? true : stored === 'true';
+  },
+  set autoUpdateStation(v) {
+    localStorage.setItem('tagtid_auto_update_station', String(Boolean(v)));
+  },
   get showGhostStations()  { return localStorage.getItem('tagtid_ghost') === 'true'; },
   set showGhostStations(v) { localStorage.setItem('tagtid_ghost', v); },
   get savedTrain() {

@@ -35,6 +35,7 @@
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
     </button>
+    <a id="btn-help" class="icon-btn icon-link" href="manual.html" aria-label="Manual">?</a>
   </header>
 
   <main>
@@ -59,6 +60,16 @@
       <div class="detail-actions">
         <button id="btn-save-train" class="btn-action">Spara tåg</button>
         <button id="btn-goto-saved" class="btn-action btn-action-accent" hidden>Aktuellt tåg</button>
+        <div class="auto-refresh-group" aria-label="Automatisk uppdatering av tåginformation">
+          <span class="auto-refresh-label">Auto</span>
+          <div class="auto-refresh-options">
+            <button type="button" class="btn-action auto-refresh-option" data-minutes="0">Av</button>
+            <button type="button" class="btn-action auto-refresh-option" data-minutes="1">1</button>
+            <button type="button" class="btn-action auto-refresh-option" data-minutes="5">5</button>
+            <button type="button" class="btn-action auto-refresh-option" data-minutes="10">10</button>
+            <button type="button" class="btn-action auto-refresh-option" data-minutes="15">15 min</button>
+          </div>
+        </div>
       </div>
       <div class="ghost-bar">
         <button id="btn-ghost-toggle" class="btn-ghost">Visa spökstationer</button>
@@ -93,8 +104,12 @@
           </div>
           <div id="selected-station"></div>
           <button id="btn-geolocate" class="btn btn-secondary">
-            📍 Hitta närmaste station automatiskt
+            📍 Hitta närmste station
           </button>
+          <label class="toggle-row" for="input-auto-station">
+            <span>Uppdatera automatiskt</span>
+            <input id="input-auto-station" class="toggle-input" type="checkbox">
+          </label>
         </div>
 
         <div class="settings-group">
@@ -109,7 +124,6 @@
           <span class="settings-label">App</span>
           <span id="version-display" class="settings-hint"></span>
           <button id="btn-update-app" class="btn btn-secondary">Uppdatera appen</button>
-          <a class="btn btn-secondary" href="manual.html">Manual</a>
         </div>
 
         <button id="btn-save-settings" class="btn btn-primary">Spara inställningar</button>

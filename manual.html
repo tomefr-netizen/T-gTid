@@ -66,7 +66,7 @@
           <li>Om ingen API-nyckel är sparad kommer du direkt till Inställningar.</li>
           <li>Klistra in din Trafikverket API-nyckel.</li>
           <li>Tillåt platsåtkomst när telefonen eller webbläsaren frågar.</li>
-          <li>Tryck på <strong>Hitta närmaste station automatiskt</strong> eller välj station manuellt.</li>
+          <li>Tryck på <strong>Hitta närmste station</strong> eller välj station manuellt.</li>
           <li>Tryck på <strong>Spara inställningar</strong>.</li>
         </ol>
       </section>
@@ -102,8 +102,10 @@
           </p>
         </div>
         <p>
-          När appen öppnas försöker TågTid hämta närmaste station automatiskt,
-          så att du snabbare ser rätt avgångar och ankomster.
+          När appen öppnas försöker TågTid hämta närmaste station automatiskt om ingen station redan är sparad.
+          I Inställningar finns också valet <strong>Uppdatera automatiskt</strong>, som är på som standard.
+          När det valet är på kontrollerar TågTid din närmaste station när startsidans stationsvy öppnas.
+          Om valet är av behålls stationen som du senast sparade i Inställningar.
         </p>
       </section>
 
@@ -118,6 +120,7 @@
           <li>Destination eller ursprung visas i mitten.</li>
           <li>Färgmarkering och status visar om tåget är i tid, försenat, passerat eller inställt.</li>
           <li>Du kan också se spår, operatör och om det är tåg eller buss när informationen finns.</li>
+          <li>Automatiska uppdateringar hämtas i bakgrunden, så den gamla listan ligger kvar tills ny data verkligen har kommit in.</li>
         </ul>
       </section>
 
@@ -131,6 +134,8 @@
           <li>Tryck på <strong>Spara tåg</strong> om du vill hitta tillbaka till ett visst tåg senare.</li>
           <li>Om du redan har sparat ett tåg visas en knapp för att hoppa direkt till det.</li>
           <li>Du kan också välja att visa spökstationer om du vill se fler tekniska stopp längs vägen.</li>
+          <li>Du kan välja automatisk uppdatering med <strong>Auto: Av, 1, 5, 10 eller 15 min</strong>.</li>
+          <li>Om en automatisk uppdatering misslyckas ligger den gamla informationen kvar och appen kan visa <strong>Uppdatering misslyckades</strong>.</li>
         </ul>
       </section>
 
@@ -163,6 +168,7 @@
         <p>
           I Inställningar kan du byta mellan ljust och mörkt tema. Där finns också knappen
           <strong>Uppdatera appen</strong> om du vill läsa in den senaste versionen.
+          TågTid kontrollerar också vid start om en ny version verkar finnas.
         </p>
       </section>
 
@@ -188,6 +194,14 @@
             <h3>Jag ser inga tåg</h3>
             <p>
               Kontrollera att rätt station är vald och att din API-nyckel fungerar. Prova också att uppdatera appen.
+            </p>
+          </article>
+
+          <article class="manual-card">
+            <h3>Det står Uppdatering misslyckades</h3>
+            <p>
+              Då lyckades appen inte få in ny data just då, ofta på grund av dålig täckning eller ett långsamt API-svar.
+              Den tidigare informationen ligger kvar på skärmen tills en senare uppdatering fungerar.
             </p>
           </article>
         </div>

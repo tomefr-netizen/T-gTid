@@ -88,6 +88,11 @@ body {
 }
 .icon-btn:hover { background: var(--accent-soft); }
 .icon-btn[hidden] { display: none; }
+.icon-link {
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+}
 
 /* --- Views --- */
 main {
@@ -465,6 +470,25 @@ main {
   font-size: 0.95rem;
 }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+}
+
+.toggle-input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
 /* --- Empty / loading / error states --- */
 .state-msg {
   padding: 40px 20px;
@@ -540,11 +564,34 @@ main {
 .detail-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 6px 14px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.auto-refresh-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.auto-refresh-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.auto-refresh-options {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 /* --- Station action bar (temp station view) --- */

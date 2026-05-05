@@ -1,12 +1,17 @@
-const CACHE = 'tagtid-v3';
+const CACHE = 'tagtid-v4';
 const SHELL = [
   './',
   './index.html',
+  './manual.html',
+  './manifest.json',
   './css/main.css',
   './js/settings.js',
   './js/api.js',
   './js/location.js',
   './js/app.js',
+  './js/traffic-type.js',
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png',
   './icons/icon.svg',
 ];
 

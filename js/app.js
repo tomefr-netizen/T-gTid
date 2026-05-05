@@ -1,13 +1,16 @@
-const VERSION = '0.1';
+const VERSION = '0.2';
 
 // --- State ---
 const State = {
   activeTab: 'departures',
-  refreshTimer: null,
+  stationRefreshTimer: null,
+  detailRefreshTimer: null,
   allStations: [],
   loading: false,
   currentTrain: null,
   viewStationSig: null,
+  detailAutoRefreshMinutes: 0,
+  updateAvailable: false,
 };
 
 // --- Helpers ---
@@ -46,6 +49,7 @@ const el = {
   headerTitle:         $('header-title'),
   btnBack:             $('btn-back'),
   btnSettings:         $('btn-settings'),
+  btnHelp:             $('btn-help'),
   tabs:                document.querySelectorAll('.tab'),
   btnGhost:            $('btn-ghost-toggle'),
   trainList:           $('train-list'),
@@ -54,6 +58,7 @@ const el = {
   trainStops:          $('train-stops'),
   btnSaveTrain:        $('btn-save-train'),
   btnGotoSaved:        $('btn-goto-saved'),
+  detailAutoOptions:   document.querySelectorAll('.auto-refresh-option'),
   stationActionBar:    $('station-action-bar'),
   btnFetchName:        $('btn-fetch-name'),
   btnGotoSavedStation: $('btn-goto-saved-station'),
@@ -62,6 +67,7 @@ const el = {
   suggestions:         $('station-suggestions'),
   selectedStation:     $('selected-station'),
   btnGeolocate:        $('btn-geolocate'),
+  inputAutoStation:    $('input-auto-station'),
   btnTheme:            $('btn-theme'),
   btnSave:             $('btn-save-settings'),
   versionDisplay:      $('version-display'),
@@ -89,6 +95,11 @@ function updateDetailActions() {
   } else {
     el.btnGotoSaved.hidden = true;
   }
+
+  el.detailAutoOptions.forEach(btn => {
+    const minutes = Number(btn.dataset.minutes || '0');
+    btn.classList.toggle('btn-action-accent', minutes === State.detailAutoRefreshMinutes);
+  });
 }
 
 // --- Station action bar in temp station view ---
@@ -103,6 +114,36 @@ function updateStationActionBar() {
   } else {
     el.btnGotoSavedStation.hidden = true;
   }
+}
+
+function stopStationRefreshTimer() {
+  clearInterval(State.stationRefreshTimer);
+  State.stationRefreshTimer = null;
+}
+
+function scheduleStationRefresh() {
+  stopStationRefreshTimer();
+  State.stationRefreshTimer = setInterval(loadAnnouncements, 120_000, {
+    preserveContent: true,
+    showFailureToast: true,
+  });
+}
+
+function stopDetailRefreshTimer() {
+  clearInterval(State.detailRefreshTimer);
+  State.detailRefreshTimer = null;
+}
+
+function scheduleDetailRefresh() {
+  stopDetailRefreshTimer();
+  if (!State.currentTrain || State.detailAutoRefreshMinutes <= 0) return;
+  State.detailRefreshTimer = setInterval(() => {
+    if (!State.currentTrain) return;
+    loadTrainDetail(State.currentTrain.id, State.currentTrain.date, {
+      preserveContent: true,
+      showFailureToast: true,
+    });
+  }, State.detailAutoRefreshMinutes * 60_000);
 }
 
 // --- View switching ---
@@ -123,6 +164,53 @@ function toast(msg, ms = 3000) {
   el.toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.toast.classList.remove('show'), ms);
+}
+
+function hasTrainListContent() {
+  return !!el.trainList.querySelector('.train-item');
+}
+
+function hasTrainDetailContent() {
+  return !!el.trainStops.querySelector('.stop-item');
+}
+
+function updateVersionDisplay() {
+  el.versionDisplay.textContent = State.updateAvailable
+    ? `Version ${VERSION} · Ny version tillgänglig`
+    : `Version ${VERSION}`;
+  el.btnUpdateApp.textContent = State.updateAvailable ? 'Uppdatera appen · ny version' : 'Uppdatera appen';
+}
+
+function markUpdateAvailable() {
+  if (State.updateAvailable) return;
+  State.updateAvailable = true;
+  updateVersionDisplay();
+  toast('Ny version finns. Öppna Inställningar och tryck Uppdatera appen.', 5000);
+}
+
+async function checkForAppUpdate() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return;
+
+    if (reg.waiting) markUpdateAvailable();
+
+    reg.addEventListener('updatefound', () => {
+      const worker = reg.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          markUpdateAvailable();
+        }
+      });
+    });
+
+    await reg.update();
+    if (reg.waiting) markUpdateAvailable();
+  } catch {
+    // Versionskontroll ska inte störa appstarten.
+  }
 }
 
 // --- Theme ---
@@ -209,14 +297,18 @@ function renderTrainList(trains) {
 }
 
 // --- Load station announcements ---
-async function loadAnnouncements() {
+async function loadAnnouncements(options = {}) {
   if (State.loading) return;
+  const { preserveContent = false, showFailureToast = false } = options;
   const apiKey = Settings.apiKey;
   const stationSig = State.viewStationSig || Settings.stationSig;
   if (!apiKey || !stationSig) return;
 
   State.loading = true;
-  el.trainList.innerHTML = '<li class="state-msg">Laddar...</li>';
+  const hadContent = hasTrainListContent();
+  if (!preserveContent || !hadContent) {
+    el.trainList.innerHTML = '<li class="state-msg">Laddar...</li>';
+  }
 
   const type = State.activeTab === 'departures' ? 'Avgang' : 'Ankomst';
   try {
@@ -224,31 +316,48 @@ async function loadAnnouncements() {
       API.getAnnouncements(apiKey, stationSig, type),
       ensureStations(),
     ]);
+    if (preserveContent && hadContent && !trains.length) {
+      if (showFailureToast) toast('Uppdatering misslyckades');
+      return;
+    }
+
     renderTrainList(trains);
     el.lastUpdated.textContent = `Uppdaterad ${new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
   } catch (err) {
-    el.trainList.innerHTML = `<li class="state-msg is-error">
-      Fel: ${err.message}
-      <button onclick="loadAnnouncements()">Försök igen</button>
-    </li>`;
+    if (preserveContent && hadContent) {
+      if (showFailureToast) toast('Uppdatering misslyckades');
+    } else {
+      el.trainList.innerHTML = `<li class="state-msg is-error">
+        Fel: ${err.message}
+        <button onclick="loadAnnouncements()">Försök igen</button>
+      </li>`;
+    }
   } finally {
     State.loading = false;
   }
 }
 
 // --- Load train detail ---
-async function loadTrainDetail(trainId, date) {
+async function loadTrainDetail(trainId, date, options = {}) {
+  const { preserveContent = false, showFailureToast = false } = options;
   State.currentTrain = { id: trainId, date };
   updateDetailActions();
-  el.trainStops.innerHTML = '<li class="state-msg">Laddar...</li>';
-  el.detailHeader.innerHTML = `<div class="detail-train-id">Tåg ${trainId}</div>`;
+  const hadContent = hasTrainDetailContent();
+  if (!preserveContent || !hadContent) {
+    el.trainStops.innerHTML = '<li class="state-msg">Laddar...</li>';
+    el.detailHeader.innerHTML = `<div class="detail-train-id">Tåg ${trainId}</div>`;
+  }
 
   await ensureStations();
 
   try {
     const raw = await API.getTrainStops(Settings.apiKey, trainId, date);
     if (!raw.length) {
-      el.trainStops.innerHTML = '<li class="state-msg">Inga hållplatser hittades.</li>';
+      if (preserveContent && hadContent) {
+        if (showFailureToast) toast('Uppdatering misslyckades');
+      } else {
+        el.trainStops.innerHTML = '<li class="state-msg">Inga hållplatser hittades.</li>';
+      }
       return;
     }
 
@@ -270,6 +379,11 @@ async function loadTrainDetail(trainId, date) {
     }
     const stops = Array.from(byStation.values())
       .sort((a, b) => new Date(a.AdvertisedTimeAtLocation) - new Date(b.AdvertisedTimeAtLocation));
+
+    if (preserveContent && hadContent && !stops.length) {
+      if (showFailureToast) toast('Uppdatering misslyckades');
+      return;
+    }
 
     const first = stops[0];
     const last  = stops[stops.length - 1];
@@ -316,7 +430,11 @@ async function loadTrainDetail(trainId, date) {
       </li>`;
     }).join('');
   } catch (err) {
-    el.trainStops.innerHTML = `<li class="state-msg is-error">Fel: ${err.message}</li>`;
+    if (preserveContent && hadContent) {
+      if (showFailureToast) toast('Uppdatering misslyckades');
+    } else {
+      el.trainStops.innerHTML = `<li class="state-msg is-error">Fel: ${err.message}</li>`;
+    }
   }
 }
 
@@ -350,6 +468,7 @@ async function autoGeolocate() {
 
 // --- Background geo-update: byt station tyst om användaren har flyttat sig ---
 async function backgroundGeoUpdate() {
+  if (!Settings.autoUpdateStation) return;
   try {
     const stations = await API.getStations(Settings.apiKey);
     const pos = await Location.getCurrentPosition();
@@ -360,7 +479,7 @@ async function backgroundGeoUpdate() {
     Settings.setStation(nearest.LocationSignature, nearest.AdvertisedShortLocationName);
     setTitle(nearest.AdvertisedShortLocationName);
     toast(`Byter till ${nearest.AdvertisedShortLocationName}`);
-    loadAnnouncements();
+    loadAnnouncements({ preserveContent: true, showFailureToast: true });
   } catch {
     // Tyst fel — behåll nuvarande station
   }
@@ -405,36 +524,50 @@ function pickStation(sig, name) {
 
 // --- Routing ---
 function route() {
-  clearInterval(State.refreshTimer);
+  stopStationRefreshTimer();
+  stopDetailRefreshTimer();
   const hash = window.location.hash || '#/';
 
   if (hash.startsWith('#/train/')) {
     const parts   = hash.slice(8).split('/');
     const trainId = decodeURIComponent(parts[0]);
     const date    = parts[1] || new Date().toISOString().slice(0, 10);
+    const isSameTrain = State.currentTrain && State.currentTrain.id === trainId && State.currentTrain.date === date;
+    if (!isSameTrain) State.detailAutoRefreshMinutes = 0;
     State.viewStationSig = null;
     showView('view-train');
     setTitle('Tåginformation');
     loadTrainDetail(trainId, date);
+    scheduleDetailRefresh();
     return;
   }
 
   if (hash === '#/settings') {
+    State.currentTrain = null;
+    State.detailAutoRefreshMinutes = 0;
     State.viewStationSig = null;
     showView('view-settings');
     setTitle('Inställningar');
     el.inputApiKey.value = Settings.apiKey;
+    el.inputAutoStation.checked = Settings.autoUpdateStation;
     if (Settings.stationName) {
       el.inputStation.value = Settings.stationName;
       el.selectedStation.textContent = Settings.stationName;
       el.selectedStation.dataset.sig  = Settings.stationSig;
       el.selectedStation.dataset.name = Settings.stationName;
+    } else {
+      el.inputStation.value = '';
+      el.selectedStation.textContent = '';
+      delete el.selectedStation.dataset.sig;
+      delete el.selectedStation.dataset.name;
     }
     initStationSearch();
     return;
   }
 
   if (hash.startsWith('#/station/')) {
+    State.currentTrain = null;
+    State.detailAutoRefreshMinutes = 0;
     const sig  = decodeURIComponent(hash.slice(10));
     State.viewStationSig = sig;
     showView('view-station');
@@ -442,6 +575,7 @@ function route() {
     el.stationActionBar.hidden = false;
     updateStationActionBar();
     loadAnnouncements();
+    scheduleStationRefresh();
     return;
   }
 
@@ -450,6 +584,8 @@ function route() {
     window.location.hash = '#/settings';
     return;
   }
+  State.currentTrain = null;
+  State.detailAutoRefreshMinutes = 0;
   State.viewStationSig = null;
   el.stationActionBar.hidden = true;
   showView('view-station');
@@ -459,16 +595,18 @@ function route() {
     autoGeolocate();
   } else {
     loadAnnouncements();
-    backgroundGeoUpdate();
+    if (Settings.autoUpdateStation) {
+      backgroundGeoUpdate();
+    }
   }
-  State.refreshTimer = setInterval(loadAnnouncements, 120_000);
+  scheduleStationRefresh();
 }
 
 // --- Init ---
 function init() {
   loadLongNamesCache();
   applyTheme(Settings.theme);
-  el.versionDisplay.textContent = `Version ${VERSION}`;
+  updateVersionDisplay();
 
   // Back button
   el.btnBack.addEventListener('click', () => history.back());
@@ -481,7 +619,7 @@ function init() {
     el.tabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     State.activeTab = tab.dataset.tab;
-    loadAnnouncements();
+    loadAnnouncements({ preserveContent: true, showFailureToast: true });
   }));
 
   // Ghost station toggle
@@ -516,6 +654,21 @@ function init() {
     if (saved) {
       window.location.hash = `#/train/${encodeURIComponent(saved.id)}/${saved.date}`;
     }
+  });
+
+  el.detailAutoOptions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const minutes = Number(btn.dataset.minutes || '0');
+      State.detailAutoRefreshMinutes = minutes;
+      updateDetailActions();
+      scheduleDetailRefresh();
+      if (minutes > 0 && State.currentTrain) {
+        loadTrainDetail(State.currentTrain.id, State.currentTrain.date, {
+          preserveContent: true,
+          showFailureToast: true,
+        });
+      }
+    });
   });
 
   // Fetch full station name
@@ -592,7 +745,7 @@ function init() {
       toast(`Kunde inte hämta position: ${err.message}`);
     } finally {
       el.btnGeolocate.disabled = false;
-      el.btnGeolocate.textContent = '📍 Hitta närmaste station automatiskt';
+      el.btnGeolocate.textContent = '📍 Hitta närmste station';
     }
   });
 
@@ -604,6 +757,7 @@ function init() {
     const sig  = el.selectedStation.dataset.sig;
     const name = el.selectedStation.dataset.name;
     if (sig && name) Settings.setStation(sig, name);
+    Settings.autoUpdateStation = el.inputAutoStation.checked;
 
     toast('Inställningar sparade');
     if (Settings.apiKey && Settings.stationSig) {
@@ -624,13 +778,14 @@ function init() {
       await Promise.all(keys.map(k => caches.delete(k)));
       window.location.reload(true);
     } catch {
+      updateVersionDisplay();
       el.btnUpdateApp.disabled = false;
-      el.btnUpdateApp.textContent = 'Uppdatera appen';
       toast('Kunde inte uppdatera — ladda om manuellt');
     }
   });
 
   window.addEventListener('hashchange', route);
+  checkForAppUpdate();
   route();
 }
 
