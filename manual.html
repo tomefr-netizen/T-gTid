@@ -19,7 +19,7 @@
     <header class="manual-hero">
       <div class="manual-hero-top">
         <span class="manual-kicker">TågTid</span>
-        <a class="btn btn-secondary manual-back" href="index.html#/">Tillbaka till appen</a>
+        <a class="btn btn-secondary manual-back" href="index.html#/" id="manual-back-link">Tillbaka</a>
       </div>
 
       <div class="manual-hero-copy">
@@ -208,5 +208,16 @@
       </section>
     </main>
   </div>
+  <script>
+    const backLink = document.getElementById('manual-back-link');
+    if (backLink) {
+      backLink.addEventListener('click', (event) => {
+        if (window.history.length > 1) {
+          event.preventDefault();
+          window.history.back();
+        }
+      });
+    }
+  </script>
 </body>
 </html>

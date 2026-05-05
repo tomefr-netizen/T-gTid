@@ -327,6 +327,7 @@ main {
 }
 .stop-item.passed .stop-dot    { background: var(--accent); }
 .stop-item.delayed .stop-dot   { border-color: var(--yellow); }
+.stop-item.delayed.passed .stop-dot { background: var(--yellow); }
 .stop-item.cancelled .stop-dot { border-color: var(--red); background: rgba(239,68,68,.2); }
 
 .stop-name {

@@ -19,7 +19,9 @@ test('manual page contains key onboarding guidance', () => {
   assert.match(manualHtml, /Kom igång/i);
   assert.match(manualHtml, /API-nyckel/i);
   assert.match(manualHtml, /plats/i);
-  assert.match(manualHtml, /Tillbaka till appen/i);
+  assert.match(manualHtml, /manual-back-link/);
+  assert.match(manualHtml, /window\.history\.back\(\)/);
+  assert.match(manualHtml, /index\.html#\//);
 });
 
 test('manual page documents the refined station and ghost-station behavior', () => {
@@ -44,6 +46,12 @@ test('home view refresh interval updates train announcements every two minutes',
   assert.match(appJs, /preserveContent:\s*true/);
   assert.match(appJs, /navigator\.serviceWorker\.getRegistration\(\)/);
   assert.match(appJs, /reg\.update\(\)/);
+});
+
+test('train detail marks delayed passed stops as both passed and delayed', () => {
+  assert.match(appJs, /if \(delay >= 5\) statusClasses\.push\('delayed'\)/);
+  assert.match(appJs, /if \(passed\) statusClasses\.push\('passed'\)/);
+  assert.match(indexHtml, /view-train/);
 });
 
 test('index includes station auto-update and train detail auto-refresh controls', () => {

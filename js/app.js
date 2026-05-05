@@ -400,9 +400,14 @@ async function loadTrainDetail(trainId, date, options = {}) {
       const cancelled = stop.Canceled === true;
       const delay     = actual ? delayMin(adv, actual) : delayMin(adv, est);
 
-      const statusClass = cancelled ? 'cancelled'
-        : delay >= 5 ? 'delayed'
-        : passed ? 'passed' : '';
+      const statusClasses = [];
+      if (cancelled) {
+        statusClasses.push('cancelled');
+      } else {
+        if (delay >= 5) statusClasses.push('delayed');
+        if (passed) statusClasses.push('passed');
+      }
+      const statusClass = statusClasses.join(' ');
 
       let timesHtml;
       if (actual) {
