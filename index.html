@@ -46,6 +46,16 @@
         <button class="tab active" data-tab="departures">Avgångar</button>
         <button class="tab"        data-tab="arrivals">Ankomster</button>
       </div>
+      <div class="station-controls">
+        <div class="segmented-control" aria-label="Välj dag">
+          <button id="btn-day-today" class="segment-btn" type="button" data-day="today">Idag</button>
+          <button id="btn-day-tomorrow" class="segment-btn" type="button" data-day="tomorrow">Imorgon</button>
+        </div>
+        <div class="segmented-control" aria-label="Välj tågurval">
+          <button id="btn-filter-future" class="segment-btn" type="button" data-filter="future">Framtida</button>
+          <button id="btn-filter-all" class="segment-btn" type="button" data-filter="all">Alla</button>
+        </div>
+      </div>
       <div id="station-action-bar" hidden>
         <button id="btn-fetch-name" class="btn-action">Hämta namn</button>
         <button id="btn-goto-saved-station" class="btn-action btn-action-accent" hidden>Tåg</button>

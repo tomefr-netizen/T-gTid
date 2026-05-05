@@ -133,6 +133,46 @@ main {
   border-bottom-color: var(--accent);
 }
 
+.station-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.segment-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.segment-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.segment-btn.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 /* --- Ghost station bar --- */
 .ghost-bar {
   display: flex;
@@ -227,6 +267,22 @@ main {
   color: var(--ink);
   line-height: 1;
 }
+.train-time-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.train-time-planned {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.train-time-estimated {
+  color: var(--ink);
+}
+.train-item[data-status="delayed"] .train-time-planned { color: var(--yellow); }
 .train-info {
   display: flex;
   flex-direction: column;

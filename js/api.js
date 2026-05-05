@@ -54,9 +54,11 @@ const API = {
     return result[0]?.TrainStation?.[0] || null;
   },
 
-  async getAnnouncements(apiKey, locationSig, activityType) {
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    const end   = new Date(); end.setHours(23, 59, 59, 0);
+  async getAnnouncements(apiKey, locationSig, activityType, date = new Date()) {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 0);
     const xml = this._wrap(apiKey, `
       <QUERY objecttype="TrainAnnouncement" namespace="rail.trafficinfo" schemaversion="2.0" limit="100" orderby="AdvertisedTimeAtLocation">
         <FILTER>

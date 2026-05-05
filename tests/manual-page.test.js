@@ -10,6 +10,8 @@ const manualHtml = fs.existsSync(manualPath)
   ? fs.readFileSync(manualPath, 'utf8')
   : '';
 const appJs = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+const settingsJs = fs.readFileSync(path.join(root, 'js/settings.js'), 'utf8');
+const apiJs = fs.readFileSync(path.join(root, 'js/api.js'), 'utf8');
 
 test('settings view links to the manual page', () => {
   assert.match(indexHtml, /id="btn-help"[^>]*href="manual\.html"/);
@@ -58,9 +60,33 @@ test('index includes station auto-update and train detail auto-refresh controls'
   assert.match(indexHtml, /Hitta närmste station/i);
   assert.match(indexHtml, /input-auto-station/);
   assert.match(indexHtml, /Automatisk uppdatering av tåginformation/i);
+  assert.match(indexHtml, /btn-day-today/);
+  assert.match(indexHtml, /btn-day-tomorrow/);
+  assert.match(indexHtml, /btn-filter-future/);
+  assert.match(indexHtml, /btn-filter-all/);
   assert.match(indexHtml, /data-minutes="0"[^>]*>Av</i);
   assert.match(indexHtml, /data-minutes="1"[^>]*>1</i);
   assert.match(indexHtml, /data-minutes="5"[^>]*>5</i);
   assert.match(indexHtml, /data-minutes="10"[^>]*>10</i);
   assert.match(indexHtml, /data-minutes="15"[^>]*>15 min</i);
+});
+
+test('station view remembers last tab and supports day and future filters', () => {
+  assert.match(settingsJs, /tagtid_last_tab/);
+  assert.match(appJs, /Settings\.lastTab/);
+  assert.match(appJs, /selectedDay/);
+  assert.match(appJs, /showFutureOnly/);
+  assert.match(appJs, /dayButtons/);
+  assert.match(appJs, /filterButtons/);
+  assert.match(indexHtml, /Idag/);
+  assert.match(indexHtml, /Imorgon/);
+  assert.match(indexHtml, /Framtida/);
+  assert.match(apiJs, /getAnnouncements\(apiKey,\s*locationSig,\s*activityType,\s*date/);
+});
+
+test('station list renders delayed upcoming trains with planned and estimated times', () => {
+  assert.match(appJs, /delayedUpcoming/);
+  assert.match(appJs, /train-time-planned/);
+  assert.match(appJs, /train-time-estimated/);
+  assert.match(appJs, /Beräknas \$\{est\} \(\+\$\{delay\} min\)/);
 });

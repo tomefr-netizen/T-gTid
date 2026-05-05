@@ -2,7 +2,7 @@ const VERSION = '0.2';
 
 // --- State ---
 const State = {
-  activeTab: 'departures',
+  activeTab: Settings.lastTab,
   stationRefreshTimer: null,
   detailRefreshTimer: null,
   allStations: [],
@@ -11,6 +11,8 @@ const State = {
   viewStationSig: null,
   detailAutoRefreshMinutes: 0,
   updateAvailable: false,
+  selectedDay: 'today',
+  showFutureOnly: true,
 };
 
 // --- Helpers ---
@@ -42,6 +44,18 @@ function isoDate(iso) {
   return iso ? iso.slice(0, 10) : new Date().toISOString().slice(0, 10);
 }
 
+function selectedDate() {
+  const date = new Date();
+  if (State.selectedDay === 'tomorrow') {
+    date.setDate(date.getDate() + 1);
+  }
+  return date;
+}
+
+function isTodaySelected() {
+  return State.selectedDay === 'today';
+}
+
 // --- DOM refs ---
 const $ = id => document.getElementById(id);
 const el = {
@@ -51,6 +65,8 @@ const el = {
   btnSettings:         $('btn-settings'),
   btnHelp:             $('btn-help'),
   tabs:                document.querySelectorAll('.tab'),
+  dayButtons:          document.querySelectorAll('[data-day]'),
+  filterButtons:       document.querySelectorAll('[data-filter]'),
   btnGhost:            $('btn-ghost-toggle'),
   trainList:           $('train-list'),
   lastUpdated:         $('last-updated'),
@@ -114,6 +130,21 @@ function updateStationActionBar() {
   } else {
     el.btnGotoSavedStation.hidden = true;
   }
+}
+
+function applyTabSelection() {
+  el.tabs.forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === State.activeTab);
+  });
+}
+
+function updateStationControls() {
+  el.dayButtons.forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.day === State.selectedDay);
+  });
+  el.filterButtons.forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.filter === (State.showFutureOnly ? 'future' : 'all'));
+  });
 }
 
 function stopStationRefreshTimer() {
@@ -246,7 +277,12 @@ async function ensureStations() {
 // --- Render train list ---
 function renderTrainList(trains) {
   if (!trains.length) {
-    el.trainList.innerHTML = '<li class="state-msg">Inga tåg hittades för idag.</li>';
+    const message = State.showFutureOnly && isTodaySelected()
+      ? 'Inga framtida tåg hittades för idag.'
+      : State.selectedDay === 'tomorrow'
+        ? 'Inga tåg hittades för imorgon.'
+        : 'Inga tåg hittades för idag.';
+    el.trainList.innerHTML = `<li class="state-msg">${message}</li>`;
     return;
   }
 
@@ -258,6 +294,13 @@ function renderTrainList(trains) {
     const est    = fmtTime(t.EstimatedTimeAtLocation);
     const actual = fmtTime(t.TimeAtLocation);
     const date   = isoDate(t.ScheduledDepartureDateTime);
+    const delayedUpcoming = status === 'delayed' && !t.TimeAtLocation;
+    const trainTimeHtml = delayedUpcoming
+      ? `<div class="train-time-group">
+          <span class="train-time train-time-planned">${adv}</span>
+          <span class="train-time train-time-estimated">${est}</span>
+        </div>`
+      : `<div class="train-time">${adv}</div>`;
 
     let badge;
     if      (status === 'cancelled') badge = '<span class="badge cancelled">Inställt</span>';
@@ -279,7 +322,7 @@ function renderTrainList(trains) {
 
     return `<li class="train-item" data-status="${status}"
                 data-id="${t.AdvertisedTrainIdent}" data-date="${date}">
-      <div class="train-time">${adv}</div>
+      ${trainTimeHtml}
       <div class="train-info">
         <span class="train-id">Tåg ${t.AdvertisedTrainIdent}</span>
         <span class="train-dir">${dir ? '→ ' + dir : ''}</span>
@@ -311,17 +354,21 @@ async function loadAnnouncements(options = {}) {
   }
 
   const type = State.activeTab === 'departures' ? 'Avgang' : 'Ankomst';
+  const dayDate = selectedDate();
   try {
     const [trains] = await Promise.all([
-      API.getAnnouncements(apiKey, stationSig, type),
+      API.getAnnouncements(apiKey, stationSig, type, dayDate),
       ensureStations(),
     ]);
-    if (preserveContent && hadContent && !trains.length) {
-      if (showFailureToast) toast('Uppdatering misslyckades');
-      return;
-    }
+    const visibleTrains = trains.filter((train) => {
+      if (!State.showFutureOnly || !isTodaySelected()) return true;
+      const actual = train.TimeAtLocation;
+      if (actual) return false;
+      const compareTime = train.EstimatedTimeAtLocation || train.AdvertisedTimeAtLocation;
+      return compareTime ? new Date(compareTime) >= new Date() : true;
+    });
 
-    renderTrainList(trains);
+    renderTrainList(visibleTrains);
     el.lastUpdated.textContent = `Uppdaterad ${new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
   } catch (err) {
     if (preserveContent && hadContent) {
@@ -577,6 +624,8 @@ function route() {
     State.viewStationSig = sig;
     showView('view-station');
     setTitle(stationName(sig));
+    applyTabSelection();
+    updateStationControls();
     el.stationActionBar.hidden = false;
     updateStationActionBar();
     loadAnnouncements();
@@ -594,6 +643,8 @@ function route() {
   State.viewStationSig = null;
   el.stationActionBar.hidden = true;
   showView('view-station');
+  applyTabSelection();
+  updateStationControls();
   setTitle(Settings.stationName || 'TågTid');
 
   if (!Settings.stationSig) {
@@ -612,6 +663,8 @@ function init() {
   loadLongNamesCache();
   applyTheme(Settings.theme);
   updateVersionDisplay();
+  applyTabSelection();
+  updateStationControls();
 
   // Back button
   el.btnBack.addEventListener('click', () => history.back());
@@ -621,9 +674,21 @@ function init() {
 
   // Tabs
   el.tabs.forEach(tab => tab.addEventListener('click', () => {
-    el.tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
     State.activeTab = tab.dataset.tab;
+    Settings.lastTab = State.activeTab;
+    applyTabSelection();
+    loadAnnouncements({ preserveContent: true, showFailureToast: true });
+  }));
+
+  el.dayButtons.forEach(btn => btn.addEventListener('click', () => {
+    State.selectedDay = btn.dataset.day === 'tomorrow' ? 'tomorrow' : 'today';
+    updateStationControls();
+    loadAnnouncements({ preserveContent: true, showFailureToast: true });
+  }));
+
+  el.filterButtons.forEach(btn => btn.addEventListener('click', () => {
+    State.showFutureOnly = btn.dataset.filter !== 'all';
+    updateStationControls();
     loadAnnouncements({ preserveContent: true, showFailureToast: true });
   }));
 

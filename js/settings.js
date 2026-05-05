@@ -7,6 +7,13 @@ const Settings = {
     localStorage.setItem('tagtid_station_sig', sig);
     localStorage.setItem('tagtid_station_name', name);
   },
+  get lastTab() {
+    const stored = localStorage.getItem('tagtid_last_tab');
+    return stored === 'arrivals' ? 'arrivals' : 'departures';
+  },
+  set lastTab(v) {
+    localStorage.setItem('tagtid_last_tab', v === 'arrivals' ? 'arrivals' : 'departures');
+  },
   get theme()  { return localStorage.getItem('tagtid_theme') || 'dark'; },
   set theme(v) { localStorage.setItem('tagtid_theme', v); },
   get autoUpdateStation() {
